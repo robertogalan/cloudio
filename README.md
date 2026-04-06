@@ -57,7 +57,7 @@ sudo nginx -t && sudo systemctl reload nginx
 cp config.example.json config.json
 ```
 
-Edit `config.json`:
+Open `config.json` and replace the placeholders:
 
 ```json
 {
@@ -74,12 +74,18 @@ Edit `config.json`:
 }
 ```
 
-| Field | What it is |
-|-------|-----------|
-| `server` | SSH connection details — same stuff you'd put in `~/.ssh/config` |
-| `auth_type` | `"key"` for SSH key, `"password"` for password auth (requires `sshpass`) |
-| `remote_path` | Where files land on the server |
-| `base_url` | The public URL prefix that maps to `remote_path` |
+Replace each placeholder with your own values:
+
+| Placeholder | Replace with | Example |
+|---|---|---|
+| `my-server` | A friendly name for your server (just for display) | `production`, `digitalocean-nyc` |
+| `your.server.ip` | Your server's IP or hostname | `143.198.42.10`, `myserver.com` |
+| `ubuntu` | The SSH user you log in as | `root`, `deploy`, `ubuntu` |
+| `~/.ssh/id_rsa` | Path to your SSH private key | `~/.ssh/id_ed25519`, `~/keys/myserver.pem` |
+| `/home/youruser/cloudio-uploads` | The directory on the server where files go — must match the nginx `alias` from step 1 | `/home/ubuntu/cloudio-uploads` |
+| `https://yourdomain.com/cloudio` | The public URL that maps to that directory — this is the prefix for your download links | `http://143.198.42.10/cloudio`, `https://files.mysite.com` |
+
+The `config.json` file is gitignored so your credentials stay local.
 
 ### 3. Install and run
 
