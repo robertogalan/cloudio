@@ -1,0 +1,4 @@
+# No pip dependencies - uses system packages only:
+#   python3-gi, gir1.2-ayatanaappindicator3-0.1 (GTK3 tray)
+#   openssh-client (ssh, scp)
+#   sshpass (for password-based servers)
