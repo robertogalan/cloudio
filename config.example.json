@@ -1,0 +1,12 @@
+{
+    "server": {
+        "name": "my-server",
+        "host": "your.server.ip",
+        "port": 22,
+        "user": "ubuntu",
+        "auth_type": "key",
+        "key_path": "~/.ssh/id_rsa"
+    },
+    "remote_path": "/var/www/html/cloudio",
+    "base_url": "https://your.server.ip/cloudio"
+}
