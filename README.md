@@ -20,9 +20,14 @@ If you used CloudApp back when it was good — before it became a bloated screen
 
 No electron. No daemon eating your RAM. No cloud service that'll sunset next quarter. Just ~300 lines of Python, GTK for the tray icon, and `scp` to move your file. Uses zero CPU when idle.
 
+## Platform support
+
+- **Linux** — fully supported (tested on Linux Mint Cinnamon)
+- **macOS** — coming soon-ish
+
 ## Requirements
 
-- Linux with a GTK3 desktop (tested on Linux Mint Cinnamon)
+- Linux with a GTK3 desktop
 - Python 3
 - A server with SSH access and nginx (or any web server)
 - `scp` and optionally `sshpass` (for password auth)
