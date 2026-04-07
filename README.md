@@ -100,6 +100,42 @@ Or edit `~/.config/cloudio/config.json` directly (see the [Config reference](#co
 
 ---
 
+## Server setup (required)
+
+Cloudio uploads files to **your own VPS** via SCP and serves them over HTTP/S. You need two things on the server before Cloudio will work:
+
+### 1. A public directory served by nginx (or any web server)
+
+Create a directory for uploads and tell nginx to serve it publicly:
+
+```bash
+# On your server
+mkdir -p ~/cloudio-uploads
+```
+
+Add a location block to your nginx site config:
+
+```nginx
+location /cloudio/ {
+    alias /home/ubuntu/cloudio-uploads/;
+    autoindex off;
+}
+```
+
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+> **Important:** The `base_url` you configure must resolve to this server.
+> If your domain points to a different machine (CDN, load balancer, etc.),
+> use the server's direct IP or a hostname that actually maps to it.
+
+### 2. SSH access
+
+Cloudio uploads files using `scp`. Your server needs an SSH user that can write to the `remote_path` directory. SSH key auth is recommended.
+
+---
+
 ## Config reference
 
 Both platforms read from the same JSON config file.
@@ -125,28 +161,16 @@ Both platforms read from the same JSON config file.
 | Field | Description | Example |
 |---|---|---|
 | `server.name` | Friendly display name | `production`, `do-nyc` |
-| `server.host` | IP address or hostname | `143.198.42.10`, `myserver.com` |
+| `server.host` | IP address or hostname — must be the server where files are uploaded | `143.198.42.10`, `myserver.com` |
 | `server.port` | SSH port | `22` |
 | `server.user` | SSH username | `ubuntu`, `root`, `deploy` |
 | `server.auth_type` | `"key"` or `"password"` | `"key"` |
 | `server.key_path` | Path to SSH private key (when `auth_type=key`) | `~/.ssh/id_ed25519` |
 | `server.password` | Password (when `auth_type=password`) | `"hunter2"` |
-| `remote_path` | Directory on the server where files are stored | `/home/ubuntu/cloudio-uploads` |
-| `base_url` | Public URL prefix for generated links | `https://files.mysite.com` |
+| `remote_path` | Directory on the server where uploaded files are stored — must match the nginx `alias` path | `/home/ubuntu/cloudio-uploads` |
+| `base_url` | Public URL prefix for generated links — must point to the same server as `host` | `http://143.198.42.10/cloudio`, `https://files.mysite.com` |
 
-### Server setup (nginx example)
-
-```nginx
-location /cloudio/ {
-    alias /home/ubuntu/cloudio-uploads/;
-    autoindex off;
-}
-```
-
-```bash
-mkdir -p ~/cloudio-uploads
-sudo nginx -t && sudo systemctl reload nginx
-```
+> **`remote_path` and `base_url` must match.** If nginx serves `/home/ubuntu/cloudio-uploads/` at `/cloudio/`, then `remote_path` is `/home/ubuntu/cloudio-uploads` and `base_url` ends with `/cloudio`.
 
 ### Password auth note
 
