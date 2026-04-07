@@ -114,7 +114,8 @@ class DropView(AppKit.NSView):
         self._icon = make_menu_bar_icon()
         return self
 
-    def setup(self, status_item, app):
+    @objc.python_method
+    def _setup(self, status_item, app):
         """Call after alloc/initWithFrame_ to wire up references."""
         self._status_item = status_item
         self._app = app
@@ -128,6 +129,10 @@ class DropView(AppKit.NSView):
             AppKit.NSBezierPath.fillRect_(rect)
 
         if self._icon:
+            # labelColor = black in light mode, white in dark mode.
+            # Must be set before drawInRect_ so the template image composites
+            # with the correct tint color rather than always rendering black.
+            AppKit.NSColor.labelColor().set()
             sz = Foundation.NSMakeSize(18, 18)
             x = (rect.size.width - sz.width) / 2
             y = (rect.size.height - sz.height) / 2
@@ -200,7 +205,7 @@ class CloudioApp(Foundation.NSObject):
         thickness = bar.thickness()
         frame = Foundation.NSMakeRect(0, 0, 28, thickness)
         self._drop_view = DropView.alloc().initWithFrame_(frame)
-        self._drop_view.setup(self._item, self)
+        self._drop_view._setup(self._item, self)
 
         # setView_ is deprecated (10.10) but reliable on all shipping macOS.
         # It gives us a fully custom NSView that can accept drag operations.
@@ -235,6 +240,7 @@ class CloudioApp(Foundation.NSObject):
         quit_item.setTarget_(AppKit.NSApp)
         self.menu.addItem_(quit_item)
 
+    @objc.python_method
     def _menu_item(self, title, action, key):
         item = AppKit.NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
             title, action, key
@@ -265,6 +271,7 @@ class CloudioApp(Foundation.NSObject):
 
     # --- Upload logic ---
 
+    @objc.python_method
     def upload_files(self, paths):
         """Entry point called from drop or menu. Runs upload on a bg thread."""
         if not self._config:
@@ -275,6 +282,7 @@ class CloudioApp(Foundation.NSObject):
             return
         threading.Thread(target=self._do_upload, args=(paths,), daemon=True).start()
 
+    @objc.python_method
     def _do_upload(self, paths):
         cfg = self._config
         server_cfg = cfg['server']
@@ -302,6 +310,7 @@ class CloudioApp(Foundation.NSObject):
         finally:
             on_main(lambda: self._item.setTitle_(''))
 
+    @objc.python_method
     def _upload_done(self, urls):
         pb = AppKit.NSPasteboard.generalPasteboard()
         pb.clearContents()
@@ -319,6 +328,7 @@ class CloudioApp(Foundation.NSObject):
 
     # --- Helpers ---
 
+    @objc.python_method
     def _alert(self, title, msg):
         """Show a native alert. Must be called on the main thread."""
         alert = AppKit.NSAlert.alloc().init()

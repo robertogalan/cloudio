@@ -195,6 +195,7 @@ class ConfigWindow(Foundation.NSObject):
                        bold=True, align=AppKit.NSTextAlignmentLeft)
         cv.addSubview_(title)
 
+    @objc.python_method
     def _add_text_row(self, cv, y, key, text, field_w=None):
         cv.addSubview_(_label(text, PAD, y + 3, LABEL_W))
         fld = _field(FIELD_X, y, w=field_w)
@@ -229,6 +230,7 @@ class ConfigWindow(Foundation.NSObject):
 
         self._update_auth_rows()
 
+    @objc.python_method
     def _fv(self, key):
         """Get string value from a field."""
         f = self._fields.get(key)
@@ -314,6 +316,7 @@ class ConfigWindow(Foundation.NSObject):
 
         threading.Thread(target=do_test, daemon=True).start()
 
+    @objc.python_method
     def _show_alert(self, title, msg, success=True):
         alert = AppKit.NSAlert.alloc().init()
         alert.setMessageText_(title)
