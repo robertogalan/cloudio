@@ -111,7 +111,29 @@ class DropView(AppKit.NSView):
         self._status_item = None
         self._app = None
         self._dragging = False
-        self._icon = make_menu_bar_icon()
+
+        # NSImageView handles template image dark/light mode automatically.
+        # Drawing template images manually in drawRect_ always renders black
+        # regardless of appearance; NSImageView does the right thing.
+        icon = make_menu_bar_icon()
+        if icon:
+            thickness = AppKit.NSStatusBar.systemStatusBar().thickness()
+            sz = 18.0
+            iv = AppKit.NSImageView.alloc().initWithFrame_(
+                Foundation.NSMakeRect(
+                    (frame.size.width - sz) / 2,
+                    (thickness - sz) / 2,
+                    sz, sz
+                )
+            )
+            iv.setImage_(icon)
+            iv.setAutoresizingMask_(
+                AppKit.NSViewMinXMargin | AppKit.NSViewMaxXMargin |
+                AppKit.NSViewMinYMargin | AppKit.NSViewMaxYMargin
+            )
+            self.addSubview_(iv)
+            self._image_view = iv
+
         return self
 
     @objc.python_method
@@ -124,19 +146,11 @@ class DropView(AppKit.NSView):
     # --- Drawing ---
 
     def drawRect_(self, rect):
+        # Only need to draw the drag-highlight background;
+        # the icon is handled by the NSImageView subview.
         if self._dragging:
             AppKit.NSColor.selectedMenuItemColor().set()
             AppKit.NSBezierPath.fillRect_(rect)
-
-        if self._icon:
-            # labelColor = black in light mode, white in dark mode.
-            # Must be set before drawInRect_ so the template image composites
-            # with the correct tint color rather than always rendering black.
-            AppKit.NSColor.labelColor().set()
-            sz = Foundation.NSMakeSize(18, 18)
-            x = (rect.size.width - sz.width) / 2
-            y = (rect.size.height - sz.height) / 2
-            self._icon.drawInRect_(Foundation.NSMakeRect(x, y, sz.width, sz.height))
 
     # --- Mouse click → open menu ---
 
