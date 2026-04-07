@@ -1,0 +1,4 @@
+# Cloudio macOS dependencies
+# Install with: pip install -r requirements.txt
+pyobjc-core>=10.0
+pyobjc-framework-Cocoa>=10.0
