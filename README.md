@@ -8,6 +8,8 @@ If you used CloudApp back when it was good — before it became a bloated screen
 
 **Your server, your files, your links.**
 
+![Cloudio menu bar icon](assets/menubar.png)
+
 ## Platform support
 
 | Platform | Status | UI |
@@ -88,6 +90,8 @@ The cloud icon will appear in your menu bar.
 
 Click the cloud icon → **Configure…** to open the settings window. Fill in your server details and click **Test Connection** to verify before saving.
 
+![Cloudio config window](assets/config-window.png)
+
 Or edit `~/.config/cloudio/config.json` directly (see the [Config reference](#config-reference) below).
 
 ### Usage on macOS
@@ -97,6 +101,8 @@ Or edit `~/.config/cloudio/config.json` directly (see the [Config reference](#co
 **Menu upload:** Click the icon → **Upload File…** to pick files via the standard open dialog.
 
 **During upload** the icon shows `↑ filename` so you know something is happening.
+
+![Upload complete notification](assets/upload-complete.png)
 
 ---
 
