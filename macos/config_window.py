@@ -4,6 +4,7 @@ A native NSWindow form for editing config.json settings.
 Imported lazily by cloudio_mac.py when the user clicks Configure….
 """
 
+import json
 import os
 import sys
 import threading
@@ -15,7 +16,25 @@ import Foundation
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from ssh_client import SSHClient  # noqa: E402
-from cloudio_mac import load_config, save_config  # noqa: E402
+
+CONFIG_DIR = Path.home() / '.config' / 'cloudio'
+CONFIG_PATH = CONFIG_DIR / 'config.json'
+
+
+def load_config():
+    if CONFIG_PATH.exists():
+        try:
+            with open(CONFIG_PATH) as f:
+                return json.load(f)
+        except (json.JSONDecodeError, OSError):
+            pass
+    return None
+
+
+def save_config(cfg):
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    with open(CONFIG_PATH, 'w') as f:
+        json.dump(cfg, f, indent=2)
 
 # ---------------------------------------------------------------------------
 # Layout constants (all in points, y=0 at bottom – Cocoa coordinate system)
