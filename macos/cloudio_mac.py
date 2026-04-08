@@ -53,14 +53,24 @@ def load_config():
 
 
 def save_config(cfg):
-    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    CONFIG_DIR.mkdir(mode=0o700, parents=True, exist_ok=True)
     with open(CONFIG_PATH, 'w') as f:
         json.dump(cfg, f, indent=2)
+    os.chmod(CONFIG_PATH, 0o600)  # owner read/write only — config contains credentials
 
 
 def safe_filename(name):
-    """Replace spaces so URLs stay clean."""
-    return name.replace(' ', '_')
+    """Sanitize a filename for safe remote storage and clean URLs.
+
+    Keeps only alphanumerics, hyphens, underscores, and dots.
+    Everything else (spaces, slashes, control chars, path traversal)
+    becomes an underscore.
+    """
+    import re
+    name = os.path.basename(name)          # strip any directory component
+    name = re.sub(r'[^\w.\-]', '_', name)  # allow only safe chars
+    name = re.sub(r'\.{2,}', '_', name)    # collapse .. sequences
+    return name or '_'
 
 
 # ---------------------------------------------------------------------------

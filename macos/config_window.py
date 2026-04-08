@@ -32,9 +32,10 @@ def load_config():
 
 
 def save_config(cfg):
-    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    CONFIG_DIR.mkdir(mode=0o700, parents=True, exist_ok=True)
     with open(CONFIG_PATH, 'w') as f:
         json.dump(cfg, f, indent=2)
+    os.chmod(CONFIG_PATH, 0o600)  # owner read/write only — config contains credentials
 
 # ---------------------------------------------------------------------------
 # Layout constants (all in points, y=0 at bottom – Cocoa coordinate system)

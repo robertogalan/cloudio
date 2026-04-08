@@ -7,7 +7,13 @@ import subprocess
 class SSHClient:
     def __init__(self, server):
         self.server = server
-        self._env = os.environ.copy()
+        # Minimal env: only what SSH actually needs.
+        # Avoids leaking secrets that may exist in the parent environment.
+        self._env = {k: os.environ[k] for k in ('PATH', 'HOME', 'USER')
+                     if k in os.environ}
+        # SSH agent socket so key-based auth works without a key_path
+        if 'SSH_AUTH_SOCK' in os.environ:
+            self._env['SSH_AUTH_SOCK'] = os.environ['SSH_AUTH_SOCK']
         if server.get('auth_type') == 'password' and server.get('password'):
             self._env['SSHPASS'] = server['password']
 
@@ -17,7 +23,9 @@ class SSHClient:
         return []
 
     def _common_opts(self):
-        return ['-o', 'StrictHostKeyChecking=no', '-o', 'ConnectTimeout=10']
+        # accept-new: auto-accept unknown hosts on first connect, but reject
+        # changed keys (prevents MITM after the first trusted connection).
+        return ['-o', 'StrictHostKeyChecking=accept-new', '-o', 'ConnectTimeout=10']
 
     def _key_opts(self):
         if self.server.get('auth_type') == 'key':

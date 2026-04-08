@@ -38,8 +38,17 @@ def load_config():
 
 
 def safe_filename(name):
-    """Replace spaces and problematic chars for clean URLs."""
-    return name.replace(' ', '_')
+    """Sanitize a filename for safe remote storage and clean URLs.
+
+    Keeps only alphanumerics, hyphens, underscores, and dots.
+    Everything else (spaces, slashes, control chars, path traversal)
+    becomes an underscore.
+    """
+    import re
+    name = os.path.basename(name)          # strip any directory component
+    name = re.sub(r'[^\w.\-]', '_', name)  # allow only safe chars
+    name = re.sub(r'\.{2,}', '_', name)    # collapse .. sequences
+    return name or '_'
 
 
 # ---------------------------------------------------------------------------
