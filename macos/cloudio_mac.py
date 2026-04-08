@@ -258,10 +258,7 @@ class CloudioApp(Foundation.NSObject):
 
         self.menu.addItem_(AppKit.NSMenuItem.separatorItem())
 
-        quit_item = AppKit.NSMenuItem.alloc().initWithTitle_action_keyEquivalent_(
-            'Quit Cloudio', 'terminate:', 'q'
-        )
-        quit_item.setTarget_(AppKit.NSApp)
+        quit_item = self._menu_item('Quit Cloudio', 'quitApp:', 'q')
         self.menu.addItem_(quit_item)
 
     @objc.python_method
@@ -284,6 +281,9 @@ class CloudioApp(Foundation.NSObject):
             paths = [str(u.path()) for u in panel.URLs()]
             if paths:
                 self.upload_files(paths)
+
+    def quitApp_(self, sender):
+        AppKit.NSApp.terminate_(sender)
 
     def openConfig_(self, sender):
         # Lazy import to avoid circular deps
