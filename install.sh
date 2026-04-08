@@ -19,6 +19,11 @@ sudo apt-get install -y -qq \
 # Make main script executable
 chmod +x "$SCRIPT_DIR/cloudio.py"
 
+# Lock down config file permissions if it exists (contains credentials)
+if [ -f "$SCRIPT_DIR/config.json" ]; then
+    chmod 600 "$SCRIPT_DIR/config.json"
+fi
+
 # Set up autostart
 mkdir -p ~/.config/autostart
 cat > ~/.config/autostart/cloudio.desktop <<EOF
@@ -36,5 +41,8 @@ EOF
 
 echo ""
 echo "Cloudio installed!"
+echo "  Configure:    cp ${SCRIPT_DIR}/config.example.json ${SCRIPT_DIR}/config.json"
+echo "                chmod 600 ${SCRIPT_DIR}/config.json   # keep credentials private"
+echo "                \$EDITOR ${SCRIPT_DIR}/config.json"
 echo "  Start now:    python3 ${SCRIPT_DIR}/cloudio.py"
 echo "  Auto-starts on login."
