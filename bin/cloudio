@@ -1,0 +1,116 @@
+#!/usr/bin/env python3
+"""Cloudio CLI - upload files from the terminal and get their links back.
+
+    cloudio file.png            upload, print the link, copy it
+    cloudio a.png b.pdf         upload several, one link per line
+    cloudio --tray              start the tray app instead
+
+URLs go to stdout and progress to stderr, so `cloudio f.png` in a pipeline
+yields just the link.
+"""
+
+import argparse
+import os
+import sys
+from pathlib import Path
+
+# The CLI lives in bin/ but the app is a flat directory one level up.
+APP_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(APP_DIR))
+
+import core
+
+
+def die(message, code=1):
+    print(f"cloudio: {message}", file=sys.stderr)
+    sys.exit(code)
+
+
+def run_tray():
+    """Hand off to the GTK tray app, which owns all the GUI dependencies."""
+    os.execvp(sys.executable, [sys.executable, str(APP_DIR / 'cloudio.py')])
+
+
+def check_files(paths):
+    """Return the paths to upload, or exit explaining which one is unusable."""
+    checked = []
+    for path in paths:
+        if not os.path.exists(path):
+            die(f"{path}: no such file")
+        if os.path.isdir(path):
+            die(f"{path}: is a directory (cloudio uploads files, not folders)")
+        if not os.path.isfile(path):
+            die(f"{path}: not a regular file")
+        if not os.access(path, os.R_OK):
+            die(f"{path}: not readable")
+        checked.append(path)
+    return checked
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        prog='cloudio',
+        description='Upload files to your server and get shareable links.',
+    )
+    parser.add_argument('files', nargs='*', metavar='FILE',
+                        help='file(s) to upload')
+    parser.add_argument('-q', '--quiet', action='store_true',
+                        help='print only the URLs, no progress')
+    parser.add_argument('-n', '--no-clipboard', action='store_true',
+                        help='do not touch the clipboard')
+    parser.add_argument('--config', metavar='PATH',
+                        help='use an alternate config.json')
+    parser.add_argument('--tray', action='store_true',
+                        help='start the tray app instead of uploading')
+    args = parser.parse_args()
+
+    if args.tray:
+        run_tray()
+
+    if not args.files:
+        parser.print_help(sys.stderr)
+        sys.exit(2)
+
+    files = check_files(args.files)
+
+    try:
+        config = core.load_config(args.config)
+    except core.ConfigError as e:
+        die(str(e))
+
+    server_name = config['server'].get('name', config['server'].get('host', '?'))
+
+    def on_progress(index, total, filename):
+        if args.quiet:
+            return
+        counter = '' if total == 1 else f'({index}/{total}) '
+        print(f"Uploading {counter}{filename} to {server_name}...",
+              file=sys.stderr)
+
+    try:
+        urls = core.upload_files(config, files, on_progress)
+    except Exception as e:
+        die(f"upload failed: {e}")
+
+    for url in urls:
+        print(url)
+
+    if args.no_clipboard:
+        return
+
+    tool = core.copy_to_clipboard('\n'.join(urls))
+    if args.quiet:
+        return
+    if tool:
+        label = 'Link' if len(urls) == 1 else f'{len(urls)} links'
+        print(f"{label} copied to clipboard.", file=sys.stderr)
+    else:
+        print("No clipboard tool found (install wl-clipboard, xclip, or xsel).",
+              file=sys.stderr)
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except KeyboardInterrupt:
+        sys.exit(130)

@@ -19,36 +19,12 @@ except (ValueError, ImportError):
     from gi.repository import AppIndicator3
 
 from gi.repository import Gtk, Gdk, GLib, GdkPixbuf
-import json
 import os
+import sys
 import threading
-from pathlib import Path
-from urllib.parse import quote, urlparse, unquote
+from urllib.parse import urlparse, unquote
 
-from ssh_client import SSHClient
-
-APP_DIR = Path(__file__).parent.resolve()
-CONFIG_FILE = APP_DIR / 'config.json'
-ICON_FILE = str(APP_DIR / 'assets' / 'cloud.svg')
-
-
-def load_config():
-    with open(CONFIG_FILE) as f:
-        return json.load(f)
-
-
-def safe_filename(name):
-    """Sanitize a filename for safe remote storage and clean URLs.
-
-    Keeps only alphanumerics, hyphens, underscores, and dots.
-    Everything else (spaces, slashes, control chars, path traversal)
-    becomes an underscore.
-    """
-    import re
-    name = os.path.basename(name)          # strip any directory component
-    name = re.sub(r'[^\w.\-]', '_', name)  # allow only safe chars
-    name = re.sub(r'\.{2,}', '_', name)    # collapse .. sequences
-    return name or '_'
+from core import ICON_FILE, ConfigError, load_config, upload_files
 
 
 # ---------------------------------------------------------------------------
@@ -148,7 +124,6 @@ class CloudioApp:
 
     def __init__(self):
         self.config = load_config()
-        self.client = SSHClient(self.config['server'])
         self.drop_zone = None
         self._setup_tray()
 
@@ -210,8 +185,6 @@ class CloudioApp:
         if isinstance(file_paths, str):
             file_paths = [file_paths]
 
-        remote_dir = self.config['remote_path']
-        base_url = self.config['base_url'].rstrip('/')
         server_name = self.config['server']['name']
 
         # Progress dialog
@@ -240,26 +213,15 @@ class CloudioApp:
 
         pulse_id = GLib.timeout_add(100, lambda: progress.pulse() or True)
 
+        def on_progress(i, total, filename):
+            GLib.idle_add(info_label.set_markup,
+                          f'<b>{filename}</b>' if total == 1
+                          else f'<b>({i}/{total}) {filename}</b>')
+            GLib.idle_add(status_label.set_text, f'Uploading to {server_name}...')
+
         def do_upload():
-            urls = []
-            total = len(file_paths)
             try:
-                # Ensure remote dir exists
-                self.client.ssh_run(['mkdir', '-p', remote_dir])
-
-                for i, local_path in enumerate(file_paths, 1):
-                    filename = safe_filename(os.path.basename(local_path))
-                    remote_path = f"{remote_dir}/{filename}"
-                    url = f"{base_url}/{quote(filename)}"
-
-                    GLib.idle_add(info_label.set_markup,
-                                  f'<b>{filename}</b>' if total == 1
-                                  else f'<b>({i}/{total}) {filename}</b>')
-                    GLib.idle_add(status_label.set_text, f'Uploading to {server_name}...')
-
-                    self.client.upload(local_path, remote_path)
-                    urls.append(url)
-
+                urls = upload_files(self.config, file_paths, on_progress)
                 GLib.idle_add(_on_done, urls, None)
             except Exception as e:
                 GLib.idle_add(_on_done, [], str(e))
@@ -298,7 +260,11 @@ class CloudioApp:
 
 
 def main():
-    app = CloudioApp()
+    try:
+        app = CloudioApp()
+    except ConfigError as e:
+        print(f"cloudio: {e}", file=sys.stderr)
+        sys.exit(1)
     app._toggle_drop_zone()
     try:
         Gtk.main()

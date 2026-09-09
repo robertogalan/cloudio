@@ -21,7 +21,7 @@ If you used CloudApp back when it was good — before it became a bloated screen
 ## How it works
 
 1. A cloud icon lives in your system tray (Linux) or menu bar (macOS)
-2. Drag a file onto the icon — or pick one from the menu
+2. Drag a file onto the icon — or pick one from the menu, or run `cloudio file.png`
 3. File uploads to your server via SCP
 4. The public URL is copied to your clipboard
 5. Done
@@ -38,11 +38,15 @@ No Electron. No daemon eating your RAM. No cloud service that'll sunset next qua
 - Python 3
 - A server with SSH access and a web server (nginx, Apache, Caddy…)
 
-System packages:
-```
-python3-gi gir1.2-gtk-3.0 gir1.2-ayatanaappindicator3-0.1 openssh-client
-```
-Password auth also needs `sshpass`.
+System packages, by distro:
+
+| Distro | Packages |
+|---|---|
+| Debian / Ubuntu / Mint | `python3-gi gir1.2-gtk-3.0 gir1.2-ayatanaappindicator3-0.1 openssh-client` |
+| Arch | `python-gobject gtk3 libayatana-appindicator openssh` |
+| Fedora | `python3-gobject gtk3 libayatana-appindicator-gtk3 openssh-clients` |
+
+Password auth also needs `sshpass`. `./install.sh` picks the right set for you.
 
 ### Install
 
@@ -52,11 +56,42 @@ Password auth also needs `sshpass`.
 
 Installs dependencies, sets up autostart on login, and launches the app. After that it lives in your system tray.
 
+On Hyprland, `~/.config/autostart` is ignored, so add the launch line the installer prints to `~/.config/hypr/autostart.lua` yourself.
+
 ### Run manually
 
 ```bash
 python3 cloudio.py
 ```
+
+---
+
+## Command line
+
+`./install.sh` links `cloudio` into `~/.local/bin`, so the tray app and the
+terminal do the same thing:
+
+```bash
+cloudio file.png                 # upload, print the link, copy it
+cloudio shot.png notes.pdf       # several at once, one link per line
+cloudio --tray                   # start the tray app instead
+```
+
+| Flag | Effect |
+|---|---|
+| `-q`, `--quiet` | Print only the URLs, no progress |
+| `-n`, `--no-clipboard` | Leave the clipboard alone |
+| `--config PATH` | Use an alternate `config.json` |
+
+Links go to stdout and progress to stderr, so the command composes:
+
+```bash
+cloudio -q report.pdf | xargs -I{} echo "Here you go: {}"
+```
+
+Clipboard support uses whichever helper your session has: `wl-copy` on
+Wayland, `xclip` or `xsel` on X11, `pbcopy` on macOS. Without one, the upload
+still succeeds and the link still prints.
 
 ---
 
@@ -180,7 +215,7 @@ Both platforms read from the same JSON config file.
 
 ### Password auth note
 
-Password auth requires `sshpass` (Linux: `sudo apt install sshpass`, macOS: `brew install sshpass`). The password is passed via environment variable, not CLI arguments, so it won't appear in `ps` output. SSH keys are recommended.
+Password auth requires `sshpass` (Debian: `sudo apt install sshpass`, Arch: `sudo pacman -S sshpass`, macOS: `brew install sshpass`). The password is passed via environment variable, not CLI arguments, so it won't appear in `ps` output. SSH keys are recommended.
 
 ---
 
